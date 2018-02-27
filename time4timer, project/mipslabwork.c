@@ -41,16 +41,19 @@ void labinit( void )
 	T2CONSET = 0x8050;
     return;
 }
-int num = 567;
+int num = 567; // global variable for random function below, incremented while waiting for button press
+
 int rand(int n){
 	return (num%n) + 1;
 }
-int count = 0;
-short sequence[96];
-char level = 0;
-int idiot = 2;
+// global variables
+int count = 0; // counts number of instructions
+short sequence[96]; // array for storing the instructions
+char level = 0; // updated depending on level, 0, 1 or 2
+int idiot = 2; // value for the idiot level where we have only one button
+
+//adds instructions, one number only for idiot level, otherwise random
 void add_instruction(){
-	
 	if(level == 0){
 		sequence[count] = idiot;
 	}
@@ -59,7 +62,10 @@ void add_instruction(){
 	}
 	count = count + 1;
 }
-int increaseSpeed = 0;
+
+int increaseSpeed = 0; // global variable that increases the speed in not for losers level
+
+// displays the instructions one by one, if not for losers level also faster and faster
 void display_instructions(){
 	int i=0;
 	int y;
@@ -67,41 +73,35 @@ void display_instructions(){
 		increaseSpeed = increaseSpeed + 5;
 	}
 	while( i < count ){
-		for(y = 0; y <32; y++){
+		// y moves the arrow downwards from Y = 0 -> 32, all the way across the screen
+		for(y = 0; y <33; y++){
 			display_update();
 			display_image((4 - sequence[i])*32, y, icon);
 			delay(30 - increaseSpeed);
 
 		}
-		
-		i = i + 1;
-		
+		i = i + 1;	
 	}
 }
+char correct = 1; //global variable that checks whether the input matches the instruction or not
 
-
-char correct = 1;
 void check_input(){
 	int i = 0;
 	while( i < count){
-		volatile int check_btns = getbtns(); 
+		volatile int check_btns = getbtns(); // so that we check for changes every time
+		// while no buttons have been pressed, increments random variable
 		while(check_btns == 0){
 			num = num + 1;
 			check_btns = getbtns();
 		}
-		
-		delay(300);
+		delay(300); // delay required, otherwise the input is checked too quickly
 		if( (check_btns & 0x1) && (sequence[i] == 1)){
-			
 		}
 		else if( ((check_btns >> 1) & 0x1) && (sequence[i] == 2)){
-			
 		}
 		else if( ((check_btns >> 2) & 0x1) && (sequence[i] == 3)){
-			
 		}
 		else if( ((check_btns >> 3) & 0x1) && (sequence[i] == 4)){
-			
 		}
 		else {
 			display_string(0, "GAME OVER");
@@ -116,59 +116,22 @@ void check_input(){
 		check_btns = 0;
 	}
 }	
-/*	int n = 0;
-	char correct = 1; //check in main funct	
-	while( n < count ){	
-		display_string(n, "       lol");
-		display_update();
-			
-		volatile int check_btns = getbtns(); 
-		int gtbtns = 0;
-		while(1){
-			num = num + 1; //global variable for random
-			check_btns = getbtns(); 
-			if(check_btns){				
-				gtbtns = check_btns; //avoid fast players :D
-				break;
-			} 
-		}
-		if(((gtbtns & 0x1)) && (sequence[n] == 1) ){
-			display_string(0, "bt1 is pressed");
-		}
-		else if(((gtbtns >> 1) & 0x1) && (sequence[n] == 2)){
-			display_string(0, "bt2 is pressed");
-		//	display_string(0, "correct");
-		}
-		else if(((gtbtns >> 2) & 0x1) && (sequence[n] == 3)){
-			display_string(0, "bt3 is pressed");
-			//display_string(0, "correct");
-		}
-		else if(((gtbtns >> 3) & 0x1) && (sequence[n] == 4)){ 
-			display_string(0, "bt4 is pressed");
-			
-		}
-		else{
-			display_string(0, "wrong");
-			display_update();
-			correct = 0; 
-			//	count = 0;
-				//break;
-		}
-			
-		n = n + 1;
-	}	
-}
+
 /* This function is called repetitively from the main program */
 void labwork( void )
 { 	char option = 1;
 	volatile int btns = getbtns(); 
+ 	// while the first button "select" is not pressed
 	while((btns & 0x1) == 0){
 		btns = getbtns();
-		if((btns >> 1) & 0x3){
+		// if button 2 or 3 are pressed, increment option
+		if((btns >> 1) & 0x3){ 
 			option = option + 1;
 			delay(250);
 		}
+		// option is either 1 or 0 depending on if it's even or not
 		option = option % 2;
+		// uneven - choose Start, else even - choose High score
 		if(option == 1){
 			display_string(0, "      MENU");
 			display_string(2,"     oStart");
@@ -182,19 +145,25 @@ void labwork( void )
 		display_update();
 	}
 	delay(250);
-	display_string(0, "");
+	
+ 	// "clean" the screen 
+	display_string(0,"");
 	display_string(1,"");
 	display_string(2,"");
 	display_string(3,"");
 	display_update();
-	if(option == 1){
+	
+ 	if(option == 1){
 		btns = getbtns();
+		// while the first button "select" is not pressed
 		while((btns & 0x1) == 0){
 			btns = getbtns();
+			// if the second button is pressed, go down
 			if((btns >> 1) & 0x1){
 				level = level + 1;
 				delay(250);
 			}
+			//if the third button is pressed, go up
 			if((btns >> 2) & 0x1){
 				if(level > 0){
 					level = level - 1;
@@ -204,6 +173,7 @@ void labwork( void )
 				}
 				delay(250);
 			}
+			// level can be wither 0=idiot, 1=normal or 2=not for losers
 			level = level % 3;
 			if(level == 0){
 				display_string(0, "     LEVEL:");
@@ -228,27 +198,32 @@ void labwork( void )
 			}
 			display_update();
 		}
-		display_string(0, "");
+		display_string(0,"");
 		display_string(1,"");
 		display_string(2,"");
 		display_string(3,"");
 		display_update();
+		// while no wrong buttons have been pressed
 		while(correct){
 			display_update();
 			delay(1000);
 			add_instruction();
+			// adds another instruction if highest level
 			if( level == 2){
 				add_instruction();
 			}
 			display_instructions();
 			check_input();
-			num = num + 1;
+			num = num + 1; // increments random variable
 		}
+		// resetting the global variables
 		level = 0;
 		option = 1;
 		correct = 1;
 		count = 0;
-		display_string(0, "");
+		increaseSpeed = 0;
+		
+		display_string(0,"");
 		display_string(1,"");
 		display_string(2,"");
 		display_string(3,"");
