@@ -4,6 +4,10 @@
 int getsw(void){
 	return (PORTD >> 8) & 0x0000000f;
 }
-int getbtns(void){
-	return(PORTD >> 5) & 0x00000007;
+int getbtns( void ){
+  int bt1 = (PORTF >> 1) & 0X1;
+  int bt234 = (PORTD >> 4) & 0x0000000e;
+  PORTD = 0x0;
+  PORTF = 0x0;
+  return bt1 | bt234;
 }
