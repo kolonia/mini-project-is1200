@@ -47,40 +47,84 @@ int rand(int n){
 }
 int count = 0;
 short sequence[96];
-
+char level = 0;
+int idiot = 2;
 void add_instruction(){
-	sequence[count] = rand(4);
+	
+	if(level == 0){
+		sequence[count] = idiot;
+	}
+	else{
+		sequence[count] = rand(4);
+	}
 	count = count + 1;
 }
-
+int increaseSpeed = 0;
 void display_instructions(){
 	int i=0;
 	int y;
+	if((level == 2) && (increaseSpeed < 30)){
+		increaseSpeed = increaseSpeed + 5;
+	}
 	while( i < count ){
-
 		for(y = 0; y <32; y++){
 			display_update();
-			display_image((sequence[i]-1)*32, y, icon);
-			delay(50);
+			display_image((4 - sequence[i])*32, y, icon);
+			delay(30 - increaseSpeed);
 
 		}
 		
-		//display_string(0, "hi");
-		//display_update();
 		i = i + 1;
 		
 	}
 }
 
 
-
+char correct = 1;
 void check_input(){
-	volatile int check_btns = getbtns(); 
-	int gtbtns = 0;
 	int i = 0;
-	char correct = 1; //check in main funct
-	while( i < count ){	
-		while(!check_btns){
+	while( i < count){
+		volatile int check_btns = getbtns(); 
+		while(check_btns == 0){
+			num = num + 1;
+			check_btns = getbtns();
+		}
+		
+		delay(300);
+		if( (check_btns & 0x1) && (sequence[i] == 1)){
+			
+		}
+		else if( ((check_btns >> 1) & 0x1) && (sequence[i] == 2)){
+			
+		}
+		else if( ((check_btns >> 2) & 0x1) && (sequence[i] == 3)){
+			
+		}
+		else if( ((check_btns >> 3) & 0x1) && (sequence[i] == 4)){
+			
+		}
+		else {
+			display_string(0, "GAME OVER");
+			display_update();
+			correct = 0;
+			delay(1000);
+			break;
+		}
+		display_string(0, "");
+		display_update();
+		i = i + 1;
+		check_btns = 0;
+	}
+}	
+/*	int n = 0;
+	char correct = 1; //check in main funct	
+	while( n < count ){	
+		display_string(n, "       lol");
+		display_update();
+			
+		volatile int check_btns = getbtns(); 
+		int gtbtns = 0;
+		while(1){
 			num = num + 1; //global variable for random
 			check_btns = getbtns(); 
 			if(check_btns){				
@@ -88,32 +132,127 @@ void check_input(){
 				break;
 			} 
 		}
-		if((gtbtns & 0x1) && sequence[i] == 1 ){
+		if(((gtbtns & 0x1)) && (sequence[n] == 1) ){
+			display_string(0, "bt1 is pressed");
 		}
-		else if((gtbtns >> 1) & 0x1 && sequence[i] == 2){
+		else if(((gtbtns >> 1) & 0x1) && (sequence[n] == 2)){
+			display_string(0, "bt2 is pressed");
+		//	display_string(0, "correct");
 		}
-		else if((gtbtns >> 2) & 0x1 && sequence[i] == 3){
+		else if(((gtbtns >> 2) & 0x1) && (sequence[n] == 3)){
+			display_string(0, "bt3 is pressed");
+			//display_string(0, "correct");
 		}
-		else if((gtbtns >> 3) & 0x1 && sequence[i] == 4){ 
+		else if(((gtbtns >> 3) & 0x1) && (sequence[n] == 4)){ 
+			display_string(0, "bt4 is pressed");
+			
 		}
 		else{
+			display_string(0, "wrong");
+			display_update();
 			correct = 0; 
-			break;
+			//	count = 0;
+				//break;
 		}
-		i = i + 1;
-	}
+			
+		n = n + 1;
+	}	
 }
 /* This function is called repetitively from the main program */
 void labwork( void )
-{ 
-	int i;
-	for(i = 0; i < 4; i++){
+{ 	char option = 1;
+	volatile int btns = getbtns(); 
+	while((btns & 0x1) == 0){
+		btns = getbtns();
+		if((btns >> 1) & 0x3){
+			option = option + 1;
+			delay(250);
+		}
+		option = option % 2;
+		if(option == 1){
+			display_string(0, "      MENU");
+			display_string(2,"     oStart");
+			display_string(3,"   High score");
+		}
+		else{
+			display_string(0, "      MENU");
+			display_string(2,"      Start");
+			display_string(3,"  oHigh score");
+		}
 		display_update();
-		delay(1000);
-		add_instruction();
-		display_instructions();
-		check_input();
-		num = num + 1;
+	}
+	delay(250);
+	display_string(0, "");
+	display_string(1,"");
+	display_string(2,"");
+	display_string(3,"");
+	display_update();
+	if(option == 1){
+		btns = getbtns();
+		while((btns & 0x1) == 0){
+			btns = getbtns();
+			if((btns >> 1) & 0x1){
+				level = level + 1;
+				delay(250);
+			}
+			if((btns >> 2) & 0x1){
+				if(level > 0){
+					level = level - 1;
+				}
+				else{
+					level = 2;
+				}
+				delay(250);
+			}
+			level = level % 3;
+			if(level == 0){
+				display_string(0, "     LEVEL:");
+				display_string(1,"    oIdiot");
+				display_string(2,"     Normal");
+				display_string(3," Not for Losers");
+				display_update();
+			}
+			else if(level == 1){
+				display_string(0, "     LEVEL:");
+				display_string(1,"     Idiot");
+				display_string(2,"    oNormal");
+				display_string(3," Not for Losers");
+				display_update();
+			}
+			else{
+				display_string(0, "     LEVEL:");
+				display_string(1,"     Idiot");
+				display_string(2,"     Normal");
+				display_string(3,"oNot for Losers");
+				display_update();
+			}
+			display_update();
+		}
+		display_string(0, "");
+		display_string(1,"");
+		display_string(2,"");
+		display_string(3,"");
+		display_update();
+		while(correct){
+			display_update();
+			delay(1000);
+			add_instruction();
+			if( level == 2){
+				add_instruction();
+			}
+			display_instructions();
+			check_input();
+			num = num + 1;
+		}
+		level = 0;
+		option = 1;
+		correct = 1;
+		count = 0;
+		display_string(0, "");
+		display_string(1,"");
+		display_string(2,"");
+		display_string(3,"");
+		display_update();
 		
 	}
 	/*for(y=0; y<=32; y++){
