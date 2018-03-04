@@ -128,17 +128,31 @@ void display_init(void) {
 
 void display_string(int line, char *s) {
 	int i;
+	int c = 0;
 	if(line < 0 || line >= 4)
 		return;
 	if(!s)
 		return;
 	
-	for(i = 0; i < 16; i++)
+	for(i = 0; i < 16; i++){
 		if(*s) {
+			c = c + 1;
+			s++;
+		}
+	}
+	s = s - c;
+	for(i=0; i < ((16-c) /2) ; i++){
+			textbuffer[line][i] = ' ';
+	}
+	for(i = ((16-c) /2); i < 16; i++){
+		if(*s){
 			textbuffer[line][i] = *s;
 			s++;
-		} else
+		}
+		else{
 			textbuffer[line][i] = ' ';
+		}
+	}
 }
 int pow(int x, int y){
 	int i;
