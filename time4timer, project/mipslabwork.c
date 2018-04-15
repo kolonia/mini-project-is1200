@@ -9,21 +9,27 @@
    This file modified 2017-04-31 by Ture Teknolog 
 
    For copyright and licensing, see file COPYING */
+   
+ /* The I2C functions are borrowed from code written by
+    Axel Isaksson */  
 
 #include <stdint.h>   /* Declarations of uint_32 and the like */
 #include <pic32mx.h>  /* Declarations of system-specific addresses etc */
 #include "mipslab.h"  /* Declatations for these labs */
-#define TEMP_SENSOR_ADDR 0x50
-int mytime = 0x5957;
-int timeoutcount = 0;
+#define EEPROM_ADDR 0x50
 
-char textstring[] = "text, more text, and even more text!";
-/* Wait for I2C bus to become idle */
+/* Interrupt Service Routine */
+void user_isr( void )
+{
+  return;
+}
+
+/* Wait for I2C bus to become idle, Copyright (c) 2015, Axel Isaksson*/
 void i2c_idle() {
 	while(I2C1CON & 0x1F || I2C1STAT & (1 << 14)); //TRSTAT
 }
 
-/* Send one byte on I2C bus, return ack/nack status of transaction */
+/* Send one byte on I2C bus, return ack/nack status of transaction, Copyright (c) 2015, Axel Isaksson*/
 int i2c_send(uint8_t data) {
 	i2c_idle();
 	I2C1TRN = data;
@@ -31,8 +37,7 @@ int i2c_send(uint8_t data) {
 	return !(I2C1STAT & (1 << 15)); //ACKSTAT
 }
 
-
-/* Receive one byte from I2C bus */
+/* Receive one byte from I2C bus, Copyright (c) 2015, Axel Isaksson*/
 uint8_t i2c_recv() {
 	i2c_idle();
 	I2C1CONSET = 1 << 3; //RCEN = 1
@@ -41,77 +46,66 @@ uint8_t i2c_recv() {
 	return I2C1RCV;
 }
 
-/* Send acknowledge conditon on the bus */
+/* Send acknowledge conditon on the bus, Copyright (c) 2015, Axel Isaksson*/
 void i2c_ack() {
 	i2c_idle();
 	I2C1CONCLR = 1 << 5; //ACKDT = 0
 	I2C1CONSET = 1 << 4; //ACKEN = 1
 }
 
-/* Send not-acknowledge conditon on the bus */
+/* Send not-acknowledge conditon on the bus, Copyright (c) 2015, Axel Isaksson*/
 void i2c_nack() {
 	i2c_idle();
 	I2C1CONSET = 1 << 5; //ACKDT = 1
 	I2C1CONSET = 1 << 4; //ACKEN = 1
 }
 
-/* Send start conditon on the bus */
+/* Send start conditon on the bus, Copyright (c) 2015, Axel Isaksson*/
 void i2c_start() {
 	i2c_idle();
 	I2C1CONSET = 1 << 0; //SEN
 	i2c_idle();
 }
 
-/* Send restart conditon on the bus */
+/* Send restart conditon on the bus, Copyright (c) 2015, Axel Isaksson*/
 void i2c_restart() {
 	i2c_idle();
 	I2C1CONSET = 1 << 1; //RSEN
 	i2c_idle();
 }
 
-/* Send stop conditon on the bus */
+/* Send stop conditon on the bus, Copyright (c) 2015, Axel Isaksson*/
 void i2c_stop() {
 	i2c_idle();
 	I2C1CONSET = 1 << 2; //PEN
 	i2c_idle();
 }
 
-/* Convert 8.8 bit fixed point to string representation*/
+/* Convert numbers to strings
+   based on function fixed_to_string
+   by Copyright (c) 2015, Axel Isaksson
+   modified by us*/
 char *int_to_string(uint16_t num, char *buf) {
 	uint32_t n;
 	char *tmp;
-	
-	
 	buf += 4;
 	n = num;
 	tmp = buf;
+	
 	do {
 		*--tmp = (n  % 10) + '0';
 		n /= 10;
 	} while(n);
 	
 	*--tmp = ' ';
-	
 	n = num;
-	
 	*buf = 0;
 	
 	return tmp;
 }
 
-uint32_t strlen(char *str) {
-	uint32_t n = 0;
-	while(*str++)
-		n++;
-	return n;
-}
 
-/* Interrupt Service Routine */
-void user_isr( void )
-{
-  return;
-}
-/* Lab-specific initialization goes here */
+/* Lab-specific initialization goes here, borrowed from lab files */
 void labinit( void )
 {
   //TRISE &= ~0xff;
@@ -179,22 +173,25 @@ void labinit( void )
 	
     return;
 }
-int num = 567; // global variable for random function below, incremented while waiting for button press
 
+/* random function written by us*/
+int num = 567; // global variable for random function below, incremented while waiting for button press
 int rand(int n){
 	return (num%n) + 1;
 }
 
+/* readEEPROM (random read) and writeEEPROM are written by us
+   with functions borrowed from Copyright (c) 2015, Axel Isaksson*/
 uint8_t readEEPROM(uint8_t address){
 	do {
 		i2c_start();
-	} while(!i2c_send(TEMP_SENSOR_ADDR << 1));
+	} while(!i2c_send(EEPROM_ADDR << 1));
 	i2c_send(0x00);
 	/* Set the config register to 0 */
 	i2c_send(address);
 	do {
 		i2c_start();
-	} while(!i2c_send((TEMP_SENSOR_ADDR << 1)|1));
+	} while(!i2c_send((EEPROM_ADDR << 1)|1));
 		
 	uint8_t temp = i2c_recv();
 		
@@ -205,7 +202,7 @@ uint8_t readEEPROM(uint8_t address){
 void writeEEPROM(int score, uint8_t address){
 	do {
 		i2c_start();
-	} while(!i2c_send(TEMP_SENSOR_ADDR << 1));
+	} while(!i2c_send(EEPROM_ADDR << 1));
 	i2c_send(0x00);
 	i2c_send(address);
 	i2c_send(score);
@@ -216,6 +213,9 @@ int count = 0; // counts number of instructions
 short sequence[96]; // array for storing the instructions
 char level = 0; // updated depending on level, 0, 1 or 2
 int idiot; // value for the idiot level where we have only one button
+int restart = 0; // value for restart or back to menu
+char correct = 1; //global variable that checks whether the input matches the instruction or not
+int increaseSpeed = 0; // global variable that increases the speed in not for losers level
 
 //adds instructions, one number only for idiot level, otherwise random
 void add_instruction(){
@@ -223,33 +223,37 @@ void add_instruction(){
 		sequence[count] = idiot;
 	}
 	else{
+		if( level == 2){
+			sequence[count] = rand(4);
+			count = count + 1;
+			num = (num*3+1)*7;
+			delay(30);
+		}
 		sequence[count] = rand(4);
 	}
 	count = count + 1;
 }
 
-int increaseSpeed = 0; // global variable that increases the speed in not for losers level
-
 // displays the instructions one by one, if not for losers level also faster and faster
 void display_instructions(){
 	int i=0;
 	int y;
-	if((level == 2) && (increaseSpeed < 30)){
+	if((level == 2) && (increaseSpeed < 20)){
 		increaseSpeed = increaseSpeed + 5;
 	}
 	while( i < count ){
 		// y moves the arrow downwards from Y = 0 -> 32, all the way across the screen
 		for(y = 0; y <33; y++){
 			display_update();
-			display_image((4 - sequence[i])*32, y, icon);
+			display_image((4 - sequence[i])*32, y, 12, 32, icon);
 			delay(30 - increaseSpeed);
 
 		}
 		i = i + 1;	
 	}
 }
-char correct = 1; //global variable that checks whether the input matches the instruction or not
 
+// function written by us to check that the input matches the instruction sequence
 void check_input(){
 	char buf4[32];
 	int i = 0;
@@ -275,13 +279,13 @@ void check_input(){
 		else if( ((check_btns >> 3) & 0x1) && (sequence[i] == 4)){
 		}
 		else {
-			//display_string(0, "   GAME OVER");
 			char* score;
+			
 			score = int_to_string(count - 1, buf4);
 			display_string(1, " GAME OVER");
 			display_string(2, score);
-
 			display_update();
+			
 			correct = 0;
 			delay(1000);
 			break;
@@ -307,31 +311,34 @@ void labwork( void )
 	}
 	char option = 1;
 	volatile int btns = getbtns(); 
+	if(restart == 0){
  	// while the first button "select" is not pressed
-	while((btns & 0x1) == 0){
-		btns = getbtns();
-		num = num + 1;
-		// if button 2 or 3 are pressed, increment option
-		if((btns >> 1) & 0x3){ 
-			option = option + 1;
-			delay(250);
+		while((btns & 0x1) == 0){
+			btns = getbtns();
+			num = num + 1;
+			// if button 2 or 3 are pressed, increment option
+			if((btns >> 1) & 0x3){ 
+				option = option + 1;
+				delay(250);
+			}
+			// option is either 1 or 0 depending on if it's even or not
+			option = option % 2;
+			// uneven - choose Start, else even - choose High score
+			if(option == 1){
+				display_string(0, "MENU");
+				display_string(1,"");
+				display_string(2,"oStart");
+				display_string(3,"High score");
+			}
+			else{
+				display_string(0, "MENU");
+				display_string(2," Start");
+				display_string(3,"oHigh score");
+			}
+			display_update();
 		}
-		// option is either 1 or 0 depending on if it's even or not
-		option = option % 2;
-		// uneven - choose Start, else even - choose High score
-		if(option == 1){
-			display_string(0, "MENU");
-			display_string(2,"oStart");
-			display_string(3,"High score");
-		}
-		else{
-			display_string(0, "MENU");
-			display_string(2," Start");
-			display_string(3,"oHigh score");
-		}
-		display_update();
+		delay(250);
 	}
-	delay(250);
 	
  	// "clean" the screen 
 	display_string(0,"");
@@ -343,49 +350,51 @@ void labwork( void )
 	idiot = rand(4);
 	
  	if(option == 1){
-		btns = getbtns();
-		// while the first button "select" is not pressed
-		while((btns & 0x1) == 0){
+		if(restart == 0){
 			btns = getbtns();
-			// if the second button is pressed, go down
-			if((btns >> 1) & 0x1){
-				level = level + 1;
-				delay(250);
-			}
-			//if the third button is pressed, go up
-			if((btns >> 2) & 0x1){
-				if(level > 0){
-					level = level - 1;
+			// while the first button "select" is not pressed
+			while((btns & 0x1) == 0){
+				btns = getbtns();
+				// if the second button is pressed, go down
+				if((btns >> 1) & 0x1){
+					level = level + 1;
+					delay(250);
+				}
+				//if the third button is pressed, go up
+				if((btns >> 2) & 0x1){
+					if(level > 0){
+						level = level - 1;
+					}
+					else{
+						level = 2;
+					}
+					delay(250);
+				}
+				// level can be wither 0=idiot, 1=normal or 2=not for losers
+				level = level % 3;
+				if(level == 0){
+					display_string(0, "LEVEL:");
+					display_string(1,"oIdiot ");
+					display_string(2,"Normal");
+					display_string(3,"Not for Losers");
+					display_update();
+				}
+				else if(level == 1){
+					display_string(0, "LEVEL:");
+					display_string(1,"Idiot");
+					display_string(2,"oNormal");
+					display_string(3,"Not for Losers");
+					display_update();
 				}
 				else{
-					level = 2;
+					display_string(0, "LEVEL:");
+					display_string(1,"Idiot");
+					display_string(2,"Normal");
+					display_string(3,"oNot for Losers");
+					display_update();
 				}
-				delay(250);
-			}
-			// level can be wither 0=idiot, 1=normal or 2=not for losers
-			level = level % 3;
-			if(level == 0){
-				display_string(0, "LEVEL:");
-				display_string(1,"oIdiot ");
-				display_string(2,"Normal");
-				display_string(3,"Not for Losers");
 				display_update();
 			}
-			else if(level == 1){
-				display_string(0, "LEVEL:");
-				display_string(1,"Idiot");
-				display_string(2,"oNormal");
-				display_string(3,"Not for Losers");
-				display_update();
-			}
-			else{
-				display_string(0, "LEVEL:");
-				display_string(1,"Idiot");
-				display_string(2,"Normal");
-				display_string(3,"oNot for Losers");
-				display_update();
-			}
-			display_update();
 		}
 		display_string(0,"");
 		display_string(1,"");
@@ -397,17 +406,14 @@ void labwork( void )
 			display_update();
 			delay(1000);
 			add_instruction();
-			// adds another instruction if highest level
-			if( level == 2){
-				num = (num*3+1)*7;
-				add_instruction();
-			}
 			display_instructions();
 			check_input();
 			num = num + 1; // increments random variable
 		}
 		
+		// save high score to EEPROM
 		if( level == 1){
+			
 			if(count - 1 > first){
 				writeEEPROM(second, 3);
 				writeEEPROM(first, 2);
@@ -420,20 +426,53 @@ void labwork( void )
 			else if(count - 1 > third){
 				writeEEPROM(count - 1, 3);
 			}
-		}
-		// resetting the global variables
-		level = 0;
-		option = 1;
-		correct = 1;
-		count = 0;
-		increaseSpeed = 0;
-		
+		}		
 		
 		display_string(0,"");
 		display_string(1,"");
 		display_string(2,"");
 		display_string(3,"");
 		display_update();
+		
+		int x = 60;
+		int y = 28;
+		display_image(x, y, 4, 8, icon2);
+		display_string(0, "MENU<<|>>RESTART");
+		display_update();
+		volatile int get_btns = getbtns();
+		while(!(y < 9)){
+			get_btns = getbtns();
+			if(get_btns & 0x1){
+				x = x + 1;
+			}
+			else if((get_btns >> 1)& 0x1){
+				y = y + 1;
+			}
+			else if((get_btns >> 2)& 0x1){
+				y = y - 1;
+			}
+			else if((get_btns >> 3)& 0x1){
+				x = x - 1;
+			}
+			display_update();
+			display_image(x, y, 4, 8, icon2);
+			display_string(0, "MENU<<|>>RESTART");
+			
+			delay(75);
+		}
+		if(( x > 48 && y < 9)){
+			restart = 1;
+		}
+		else{
+			restart = 0;
+			level = 0;
+		}
+		// resetting the global variables
+		option = 1;
+		correct = 1;
+		count = 0;
+		increaseSpeed = 0;
+		
 		
 	}
 	else{

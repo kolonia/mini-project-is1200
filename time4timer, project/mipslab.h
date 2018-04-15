@@ -8,18 +8,15 @@
    For copyright and licensing, see file COPYING */
 
 /* Declare display-related functions from mipslabfunc.c */
-void display_image(int x, int y, const uint8_t *data);
+void display_image(int x, int y,int height, int width, const uint8_t *data);
 void display_init(void);
 void display_string(int line, char *s);
 void display_update(void);
 uint8_t spi_send_recv(uint8_t data);
 
 /* Declare lab-related functions from mipslabfunc.c */
-char * itoaconv( int num );
 void labwork(void);
-int nextprime( int inval );
 void quicksleep(int cyc);
-void tick( unsigned int * timep );
 
 /* Declare display_debug - a function to help debugging.
 
@@ -39,6 +36,7 @@ void display_debug( volatile int * const addr );
 extern const uint8_t const font[128*8];
 /* Declare bitmap array containing icon */
 extern const uint8_t const icon[128];
+extern const uint8_t const icon2[128];
 /* Declare text buffer for display output */
 extern char textbuffer[4][16];
 
@@ -48,8 +46,5 @@ extern char textbuffer[4][16];
    specified in the laboratory instructions. */
 /* Written as part of asm lab: delay, time2string */
 void delay(int);
-void time2string( char *, int );
 /* Written as part of i/o lab: getbtns, getsw, enable_interrupt */
 int getbtns(void);
-int getsw(void);
-void enable_interrupt(void);

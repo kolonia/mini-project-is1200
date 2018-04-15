@@ -141,6 +141,7 @@ const uint8_t const font[] = {
 	0, 120, 68, 66, 68, 120, 0, 0,
 };
 
+// arrow used for the instructions
 const uint8_t const icon[] = {
 	0, 0, 0, 0, 3, 3, 15, 15,
 	63, 63, 255,255,255,255,255,255,
@@ -149,5 +150,13 @@ const uint8_t const icon[] = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 3, 3, 15, 15,
 	15, 15, 3, 3, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0
 };
+
+// arrow used for game over
+const uint8_t const icon2[] = {
+	8, 12, 14, 15, 15, 14, 12, 8
+	
+};
+
+
+
